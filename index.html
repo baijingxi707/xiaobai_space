@@ -216,9 +216,136 @@
       color:var(--muted);
       font-size:13px;
     }
+
+    .attachment-box{
+      border:1px dashed var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fff9fb;
+    }
+    .attachment-list{
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+    .attachment-item{
+      border:1px solid var(--line);
+      border-radius:12px;
+      padding:10px;
+      background:#fff;
+    }
+    .attachment-item img{
+      max-width:100%;
+      border-radius:10px;
+      display:block;
+      margin-top:8px;
+    }
+    .attachment-name{
+      font-size:14px;
+      font-weight:600;
+      word-break:break-all;
+    }
+    .attachment-meta{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:4px;
+    }
+    .attachment-link{
+      display:inline-block;
+      margin-top:8px;
+      color:#d94f82;
+      text-decoration:none;
+      font-size:14px;
+    }
+    .attachment-link:hover{
+      text-decoration:underline;
+    }
+    .remove-attachment-btn{
+      margin-top:8px;
+    }
+
     @media (max-width:900px){
       .toolbar,.section{grid-template-columns:1fr}
     }
+  
+    .upload-box{
+      border:1px dashed var(--line);
+      border-radius:14px;
+      padding:12px;
+      background:#fffafb;
+    }
+    .attachment-preview{
+      display:grid;
+      gap:10px;
+      margin-top:10px;
+    }
+    .attachment-item{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+    }
+    .attachment-name{
+      font-size:14px;
+      color:var(--text);
+      word-break:break-all;
+    }
+    .attachment-remove{
+      border:none;
+      background:#ffe7ef;
+      color:#b4234d;
+      border-radius:999px;
+      padding:6px 10px;
+      cursor:pointer;
+    }
+    .detail-attachments{
+      margin-top:16px;
+      display:grid;
+      gap:12px;
+    }
+    .detail-image{
+      max-width:100%;
+      border-radius:14px;
+      border:1px solid var(--line);
+      display:block;
+    }
+    .file-link{
+      display:inline-block;
+      padding:10px 12px;
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fffafb;
+      color:var(--text);
+      text-decoration:none;
+    }
+    
+  
+    .panel.focus-mode{
+      grid-column:1 / -1;
+    }
+    .section.focus-detail .panel:first-child{
+      display:none;
+    }
+    .section.focus-detail{
+      grid-template-columns:1fr;
+    }
+    .detail-toolbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:12px;
+      flex-wrap:wrap;
+    }
+    .detail-content.large{
+      font-size:16px;
+      line-height:2;
+    }
+    
   </style>
 </head>
 <body>
@@ -264,6 +391,11 @@
               <input id="categoryInput" class="input" type="text" placeholder="分类，比如：法语 / EAP / 数学 / 生活" />
               <input id="keywordsInput" class="input" type="text" placeholder="关键词，用逗号分开，比如：成都, presentation, 法语" />
               <textarea id="contentInput" class="textarea" rows="10" placeholder="内容"></textarea>
+              <div class="attachment-box">
+                <div class="small">可以添加图片或文件喔。图片会直接显示，其他文件会保存成可下载附件。为了避免浏览器卡顿，尽量不要传太大的文件。</div>
+                <input id="fileInput" class="input" type="file" multiple accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.zip,.rar,.mp3,.mp4" />
+                <div id="editorAttachmentList" class="attachment-list"></div>
+              </div>
             </div>
             <div class="actions">
               <button id="saveBtn" class="btn">保存</button>
@@ -328,15 +460,152 @@
     const categoryInput = document.getElementById("categoryInput");
     const keywordsInput = document.getElementById("keywordsInput");
     const contentInput = document.getElementById("contentInput");
+    const attachmentInput = document.getElementById("attachmentInput");
+    const attachmentPreview = document.getElementById("attachmentPreview");
+    let currentAttachments = [];
+
+    function renderAttachmentPreview(){
+      if(!attachmentPreview) return;
+      attachmentPreview.innerHTML = "";
+      if(!currentAttachments.length){
+        attachmentPreview.innerHTML = `<div class="small">暂时还没有附件喔。</div>`;
+        return;
+      }
+      currentAttachments.forEach((file, index) => {
+        const div = document.createElement("div");
+        div.className = "attachment-item";
+        div.innerHTML = `
+          <div class="attachment-name">${escapeHtml(file.name)}</div>
+          <button class="attachment-remove" data-index="${index}">删除</button>
+        `;
+        div.querySelector(".attachment-remove").addEventListener("click", () => {
+          currentAttachments.splice(index, 1);
+          renderAttachmentPreview();
+        });
+        attachmentPreview.appendChild(div);
+      });
+    }
+
+    function fileToDataUrl(file){
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+    const fileInput = document.getElementById("fileInput");
+    const editorAttachmentList = document.getElementById("editorAttachmentList");
+
+    let currentAttachments = [];
+
+
+    function formatFileSize(bytes){
+      if (!Number.isFinite(bytes)) return "";
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+      return (bytes / (1024 * 1024)).toFixed(2) + " MB";
+    }
+
+    function escapeAttrValue(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#39;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;");
+    }
+
+    function isImageAttachment(file){
+      return file && file.type && file.type.startsWith("image/");
+    }
+
+    function renderEditorAttachments(){
+      editorAttachmentList.innerHTML = "";
+      if(!currentAttachments.length){
+        editorAttachmentList.innerHTML = `<div class="small">还没有添加附件喔。</div>`;
+        return;
+      }
+      currentAttachments.forEach((file, index) => {
+        const box = document.createElement("div");
+        box.className = "attachment-item";
+        box.innerHTML = `
+          <div class="attachment-name">${escapeHtml(file.name || "未命名附件")}</div>
+          <div class="attachment-meta">${escapeHtml(file.type || "未知类型")} · ${escapeHtml(formatFileSize(file.size || 0))}</div>
+          ${file.isImage ? `<img src="${escapeAttrValue(file.dataUrl)}" alt="${escapeAttrValue(file.name || "图片附件")}" />` : `<a class="attachment-link" href="${escapeAttrValue(file.dataUrl)}" download="${escapeAttrValue(file.name || "附件")}">下载这个文件</a>`}
+          <button type="button" class="btn secondary remove-attachment-btn" data-index="${index}">删除这个附件</button>
+        `;
+        editorAttachmentList.appendChild(box);
+      });
+
+      editorAttachmentList.querySelectorAll(".remove-attachment-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const index = Number(btn.dataset.index);
+          currentAttachments.splice(index, 1);
+          renderEditorAttachments();
+        });
+      });
+    }
+
+    function renderDetailAttachments(attachments){
+      if(!attachments || !attachments.length){
+        return "";
+      }
+      return `
+        <div style="margin-top:16px;">
+          <div class="small" style="margin-bottom:8px;">附件</div>
+          <div class="attachment-list">
+            ${attachments.map(file => `
+              <div class="attachment-item">
+                <div class="attachment-name">${escapeHtml(file.name || "未命名附件")}</div>
+                <div class="attachment-meta">${escapeHtml(file.type || "未知类型")} · ${escapeHtml(formatFileSize(file.size || 0))}</div>
+                ${file.isImage ? `<img src="${escapeAttrValue(file.dataUrl)}" alt="${escapeAttrValue(file.name || "图片附件")}" />` : `<a class="attachment-link" href="${escapeAttrValue(file.dataUrl)}" download="${escapeAttrValue(file.name || "附件")}">下载这个文件</a>`}
+              </div>
+            `).join("")}
+          </div>
+        </div>
+      `;
+    }
+
+    function readFilesAsDataUrls(fileList){
+      const files = Array.from(fileList || []);
+      return Promise.all(files.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({
+          name: file.name,
+          type: file.type || "application/octet-stream",
+          size: file.size,
+          dataUrl: reader.result,
+          isImage: isImageAttachment(file)
+        });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      })));
+    }
+
+
+
+    function enterFocusDetail(){
+      if(sectionEl) sectionEl.classList.add("focus-detail");
+      if(panels && panels[1]) panels[1].classList.add("focus-mode");
+    }
+
+    function exitFocusDetail(){
+      if(sectionEl) sectionEl.classList.remove("focus-detail");
+      if(panels && panels[1]) panels[1].classList.remove("focus-mode");
+    }
 
     function loadItems(){
       const raw = localStorage.getItem(STORAGE_KEY);
       if(!raw){
         localStorage.setItem(STORAGE_KEY, JSON.stringify(SAMPLE_ITEMS));
-        return [...SAMPLE_ITEMS];
+        return [...SAMPLE_ITEMS].map(item => ({...item, attachments: []}));
       }
       try{
-        return JSON.parse(raw);
+        return JSON.parse(raw).map(item => ({
+          ...item,
+          attachments: Array.isArray(item.attachments) ? item.attachments : []
+        }));
       }catch{
         localStorage.setItem(STORAGE_KEY, JSON.stringify(SAMPLE_ITEMS));
         return [...SAMPLE_ITEMS];
@@ -367,7 +636,21 @@
         btn.addEventListener("click", () => {
           currentCategory = btn.dataset.category;
           categorySelect.value = currentCategory;
-          render();
+      
+    fileInput.addEventListener("change", async (e) => {
+      const selectedFiles = Array.from(e.target.files || []);
+      if(!selectedFiles.length) return;
+      try{
+        const newFiles = await readFilesAsDataUrls(selectedFiles);
+        currentAttachments = [...currentAttachments, ...newFiles];
+        renderEditorAttachments();
+        fileInput.value = "";
+      }catch(error){
+        alert("附件读取失败了，试试换一个文件喔！");
+      }
+    });
+
+    render();
         });
       });
     }
@@ -422,6 +705,7 @@
     function showDetail(id){
       const item = items.find(x => x.id === id);
       if(!item) return;
+      enterFocusDetail();
       editor.style.display = "none";
       detailView.style.display = "block";
       sideTitle.textContent = "详情";
@@ -431,7 +715,8 @@
           ${(item.keywords || []).map(k => `<span class="tag">${escapeHtml(k)}</span>`).join("")}
         </div>
         <h3 class="detail-title">${escapeHtml(item.title)}</h3>
-        <div class="detail-content">${escapeHtml(item.content)}</div>
+        <div class="detail-toolbar"><button class="btn secondary" id="backToResultsBtn">← 返回搜索结果</button><span class="small">已进入详情大视图</span></div><div class="detail-content large">${escapeHtml(item.content)}</div>
+        ${renderDetailAttachments(item.attachments)}
         <div class="actions">
           <button class="btn" id="editThisBtn">编辑</button>
           <button class="btn secondary" id="deleteThisBtn">删除</button>
@@ -439,9 +724,12 @@
       `;
       document.getElementById("editThisBtn").addEventListener("click", () => openEditor(item.id));
       document.getElementById("deleteThisBtn").addEventListener("click", () => deleteItem(item.id));
+      const backBtn = document.getElementById("backToResultsBtn");
+      if(backBtn){ backBtn.addEventListener("click", () => { exitFocusDetail(); detailView.innerHTML = `<div class="empty">点左边一条内容，就会在这里显示详细内容喔。</div>`; }); }
     }
 
     function openEditor(id = null){
+      enterFocusDetail();
       editingId = id;
       sideTitle.textContent = id ? "编辑内容" : "新增内容";
       detailView.style.display = "none";
@@ -453,12 +741,16 @@
         categoryInput.value = item?.category || "";
         keywordsInput.value = (item?.keywords || []).join(", ");
         contentInput.value = item?.content || "";
+        currentAttachments = Array.isArray(item?.attachments) ? [...item.attachments] : [];
       }else{
         titleInput.value = "";
         categoryInput.value = "";
         keywordsInput.value = "";
         contentInput.value = "";
+        currentAttachments = [];
       }
+      fileInput.value = "";
+      renderEditorAttachments();
     }
 
     function deleteItem(id){
@@ -469,6 +761,7 @@
       sideTitle.textContent = "详情";
       detailView.style.display = "block";
       editor.style.display = "none";
+      exitFocusDetail();
       detailView.innerHTML = `<div class="empty">这条内容已经删除咯！</div>`;
     }
 
@@ -479,6 +772,7 @@
       currentCategory = "全部";
       searchInput.value = "";
       render();
+      exitFocusDetail();
       detailView.innerHTML = `<div class="empty">示例内容已恢复。点左边内容查看详情。</div>`;
       detailView.style.display = "block";
       editor.style.display = "none";
@@ -497,11 +791,12 @@
       }
 
       if(editingId){
-        items = items.map(item => item.id === editingId ? {...item, title, category, keywords, content} : item);
+        items = items.map(item => item.id === editingId ? {...item, title, category, keywords, content, attachments: [...currentAttachments]} : item);
       }else{
         items.unshift({
           id: crypto.randomUUID(),
-          title, category, keywords, content
+          title, category, keywords, content,
+          attachments: [...currentAttachments]
         });
       }
 
@@ -530,9 +825,26 @@
       return escapeHtml(str);
     }
 
+    if(attachmentInput){
+      attachmentInput.addEventListener("change", async () => {
+        const files = [...attachmentInput.files];
+        if(!files.length) return;
+        const converted = await Promise.all(files.map(async file => ({
+          name: file.name,
+          type: file.type,
+          data: await fileToDataUrl(file)
+        })));
+        currentAttachments = [...currentAttachments, ...converted];
+        attachmentInput.value = "";
+        renderAttachmentPreview();
+      });
+    }
+
     document.getElementById("newBtn").addEventListener("click", () => openEditor());
     document.getElementById("saveBtn").addEventListener("click", saveCurrent);
     document.getElementById("cancelBtn").addEventListener("click", () => {
+      enterFocusDetail();
+      exitFocusDetail();
       editor.style.display = "none";
       detailView.style.display = "block";
       sideTitle.textContent = "详情";
