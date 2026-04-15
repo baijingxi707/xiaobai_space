@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>小白的混沌空间</title>
+  <title>小白的混沌空间(๑❛ᴗ❛๑) </title>
   <style>
     :root{
       --bg:#f7f7fb;
@@ -224,12 +224,12 @@
 <body>
   <div class="wrap">
     <div class="hero">
-      <h1>小白的混沌空间</h1>
-      <p>把课程笔记、法语句子、作业模板、常用资料放进来。以后只要搜关键词，就能很快找到想要的内容。</p>
+      <h1>小白的混沌空间(๑❛ᴗ❛๑)</h1>
+      <p>这里是小白独家搜索引擎꒰՞´●᷄.𖥦●᷄`՞꒱ 输入关键词，就能找到你想要的内容咯！</p>
     </div>
 
     <div class="toolbar">
-      <input id="searchInput" class="input" type="text" placeholder="搜索关键词，比如：法语、成都、B2B、z test..." />
+      <input id="searchInput" class="input" type="text" placeholder="搜索关键词，比如：法语、食谱、邮件格式、影视推荐.." />
       <select id="categorySelect" class="select">
         <option value="全部">全部分类</option>
       </select>
@@ -255,7 +255,7 @@
         </div>
         <div class="panel-body">
           <div id="detailView">
-            <div class="empty">点左边一条内容，就会在这里显示详细内容。</div>
+            <div class="empty">点左边一条内容，就会在这里显示详细内容喔。</div>
           </div>
 
           <div id="editor" style="display:none;">
@@ -269,7 +269,7 @@
               <button id="saveBtn" class="btn">保存</button>
               <button id="cancelBtn" class="btn secondary">取消</button>
             </div>
-            <div class="small" style="margin-top:10px;">保存后会自动存在浏览器里，本地打开也能继续用。</div>
+            <div class="small" style="margin-top:10px;">保存后会自动存在浏览器里，本地打开也能继续用！</div>
           </div>
         </div>
       </div>
@@ -399,7 +399,7 @@
       results.innerHTML = "";
 
       if(!filtered.length){
-        results.innerHTML = `<div class="empty">没有搜到结果。试试换个关键词，或者新增一条内容。</div>`;
+        results.innerHTML = `<div class="empty">没有搜到结果诶..试试换个关键词，或者新增一条内容呀。</div>`;
         return;
       }
 
@@ -462,18 +462,18 @@
     }
 
     function deleteItem(id){
-      if(!confirm("确定要删除这条内容吗？")) return;
+      if(!confirm("确定要删除这条内容嘛？")) return;
       items = items.filter(x => x.id !== id);
       saveItems();
       render();
       sideTitle.textContent = "详情";
       detailView.style.display = "block";
       editor.style.display = "none";
-      detailView.innerHTML = `<div class="empty">这条内容已经删除。</div>`;
+      detailView.innerHTML = `<div class="empty">这条内容已经删除咯！</div>`;
     }
 
     function restoreSample(){
-      if(!confirm("会用示例内容覆盖当前内容，确定继续吗？")) return;
+      if(!confirm("会用示例内容覆盖当前内容，确定继续嘛？")) return;
       items = [...SAMPLE_ITEMS];
       saveItems();
       currentCategory = "全部";
@@ -492,7 +492,7 @@
       const content = contentInput.value.trim();
 
       if(!title || !content){
-        alert("标题和内容不能空着。");
+        alert("标题和内容不能空着喔！");
         return;
       }
 
@@ -537,7 +537,7 @@
       detailView.style.display = "block";
       sideTitle.textContent = "详情";
       if(!detailView.innerHTML.trim()){
-        detailView.innerHTML = `<div class="empty">点左边一条内容，就会在这里显示详细内容。</div>`;
+        detailView.innerHTML = `<div class="empty">点左边一条内容，就会在这里显示详细内容喔。</div>`;
       }
     });
     document.getElementById("addSampleBtn").addEventListener("click", restoreSample);
